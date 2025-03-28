@@ -303,6 +303,24 @@ class DownloadQueue:
             **self.config.YTDL_OPTIONS,
         }).extract_info(url, download=False)
 
+    def __check_file_size(self, url):
+        """Check if the file size is within limits"""
+        with yt_dlp.YoutubeDL(params={
+            'quiet': True,
+            'no_color': True,
+            'noplaylist': True,
+        }) as ydl:
+            try:
+                info = ydl.extract_info(url, download=False)
+                if info.get('filesize') or info.get('filesize_approx'):
+                    size = info.get('filesize') or info.get('filesize_approx')
+                    # 1GB = 1024 * 1024 * 1024 bytes
+                    if size > 1024 * 1024 * 1024:
+                        return False, f"File size ({size / (1024*1024*1024):.2f} GB) exceeds 1GB limit"
+                return True, None
+            except Exception as e:
+                return True, None  # If we can't get the size, we'll allow the download
+
     def __calc_download_path(self, quality, format, folder):
         base_directory = self.config.DOWNLOAD_DIR if (quality != 'audio' and format not in AUDIO_FORMATS) else self.config.AUDIO_DOWNLOAD_DIR
         if folder:
@@ -360,6 +378,12 @@ class DownloadQueue:
         elif etype == 'video' or (etype.startswith('url') and 'id' in entry and 'title' in entry):
             log.debug('Processing as a video')
             key = entry.get('webpage_url') or entry['url']
+            
+            # Check file size before proceeding
+            size_ok, size_error = self.__check_file_size(key)
+            if not size_ok:
+                return {'status': 'error', 'msg': size_error}
+                
             if not self.queue.exists(key):
                 dl = DownloadInfo(entry['id'], entry.get('title') or entry['id'], key, quality, format, folder, custom_name_prefix, error)
                 dldirectory, error_message = self.__calc_download_path(quality, format, folder)
@@ -388,7 +412,7 @@ class DownloadQueue:
         return {'status': 'error', 'msg': f'Unsupported resource "{etype}"'}
 
     async def add(self, url, quality, format, folder, custom_name_prefix, playlist_strict_mode, playlist_item_limit, auto_start=True, already=None):
-        log.info(f'adding {url}: {quality=} {format=} {already=} {folder=} {custom_name_prefix=} {playlist_strict_mode=} {playlist_item_limit=}')
+        log.info(f'adding {url}: quality={quality} format={format} already={already} folder={folder} custom_name_prefix={custom_name_prefix} playlist_strict_mode={playlist_strict_mode} playlist_item_limit={playlist_item_limit}')
         already = set() if already is None else already
         if url in already:
             log.info('recursion detected, skipping')

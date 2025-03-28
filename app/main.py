@@ -38,7 +38,7 @@ class Config:
         'YTDL_OPTIONS_FILE': '',
         'ROBOTS_TXT': '',
         'HOST': '0.0.0.0',
-        'PORT': '8081',
+        'PORT': os.environ.get('PORT', '8081'),
         'HTTPS': 'false',
         'CERTFILE': '',
         'KEYFILE': '',

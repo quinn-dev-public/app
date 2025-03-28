@@ -1,0 +1,18 @@
+mkdir -p downloads/audio
+mkdir -p cookies
+mkdir -p ssl
+
+cp crt.pem ssl/
+cp key.pem ssl/
+
+docker-compose up -d
+
+
+# to stop
+docker-compose down
+
+# update 
+
+sudo kill -9 81561 49030 && sleep 2 && open -a Docker
+
+docker-compose down && docker-compose build && docker-compose up -d

@@ -1,4 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Pipe({
   name: 'eta'
@@ -57,5 +58,16 @@ export class FileSizePipe implements PipeTransform {
 
       const unitValue = value / Math.pow(1000, unitIndex);
       return `${unitValue.toFixed(2)} ${units[unitIndex]}`;
+  }
+}
+
+@Pipe({
+  name: 'safeHtml'
+})
+export class SafeHtmlPipe implements PipeTransform {
+  constructor(private sanitizer: DomSanitizer) {}
+
+  transform(value: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(value);
   }
 }

@@ -131,7 +131,7 @@ export class DownloadsService {
   }
   public addDownloadByUrl(url: string): Promise<any> {
     const defaultQuality = 'best';
-    const defaultFormat = 'mp4';
+    const defaultFormat = 'mp3';
     const defaultFolder = ''; 
     const defaultCustomNamePrefix = '';
     const defaultPlaylistStrictMode = false;

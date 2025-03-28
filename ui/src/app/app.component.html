@@ -1,6 +1,19 @@
+<div class="pwa-install-prompt" *ngIf="showInstallPrompt">
+  <div class="prompt-content">
+    <img src="assets/icons/favicon-32x32.png" alt="Limewire Logo" class="prompt-logo">
+    <div class="prompt-text">
+      <strong>Install Limewire</strong>
+      <p>Add to Home Screen for quick access</p>
+    </div>
+    <button class="btn-close" aria-label="Close" (click)="dismissInstallPrompt()"></button>
+  </div>
+</div>
+
 <nav class="navbar navbar-expand-md navbar-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">MeTube</a>
+    <a class="navbar-brand" href="#">
+      <img src="assets/logo.png" alt="" height="30">
+    </a>
     <!--
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsDefault" aria-controls="navbarsDefault" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -14,6 +27,13 @@
     </div>
     -->
     <div class="navbar-nav ms-auto">
+      <div class="nav-item me-2">
+        <button class="btn btn-link nav-link py-2 px-0 px-sm-2 d-flex align-items-center"
+                type="button"
+                (click)="openInfoModal()">
+          <fa-icon [icon]="faInfoCircle"></fa-icon>
+        </button>
+      </div>
       <div class="nav-item dropdown">
         <button class="btn btn-link nav-link py-2 px-0 px-sm-2 dropdown-toggle d-flex align-items-center"
                 id="theme-select"
@@ -46,7 +66,8 @@
     <div class="container add-url-box">
       <div class="row">
         <div class="col add-url-component input-group">
-          <input type="text" autocomplete="off" spellcheck="false" class="form-control" placeholder="Video or playlist URL" name="addUrl" [(ngModel)]="addUrl" [disabled]="addInProgress || downloads.loading">
+          <input type="text" autocomplete="off" spellcheck="false" class="form-control" placeholder="Video or playlist URL" name="addUrl" [(ngModel)]="addUrl" [disabled]="addInProgress || downloads.loading"
+                 (focus)="tryPasteFromClipboard()">
         </div>
       </div>
       <div class="row">
@@ -90,11 +111,11 @@
                   <span class="input-group-text">Download Folder</span>
                   <ng-select [items]="customDirs$ | async" placeholder="Default" [addTag]="allowCustomDir.bind(this)" addTagText="Create directory" [ngStyle]="{'flex-grow':'1'}" bindLabel="folder" [(ngModel)]="folder" [disabled]="addInProgress || downloads.loading"></ng-select>
                 </div>
-                <div class="input-group add-url-component">
+                <div style="display:none;" class="input-group add-url-component">
                   <span class="input-group-text">Custom Name Prefix</span>
                   <input type="text" autocomplete="off" spellcheck="false" class="form-control" placeholder="Default" name="customNamePrefix" [(ngModel)]="customNamePrefix" [disabled]="addInProgress || downloads.loading">
                 </div>
-                <div class="add-url-component">
+                <div style="display:none;" class="add-url-component">
                   <div class="row align-items-center gy-2">
                     <div class="col-12 col-md-6 order-md-2">
                       <div class="input-group">
@@ -117,7 +138,7 @@
           </div>
           <div class="btn-group ms-2" ngbDropdown>
             <button type="button" class="btn btn-secondary" (click)="openBatchImportModal()">
-              Import
+              Bulk
             </button>
             <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle>
               <span class="visually-hidden">Toggle Dropdown</span>
@@ -150,7 +171,7 @@
         </div>
         <div class="modal-body">
           <textarea [(ngModel)]="batchImportText" class="form-control" rows="6"
-            placeholder="Paste one video URL per line"></textarea>
+            placeholder="Paste one URL per line"></textarea>
           <div class="mt-2">
             <small *ngIf="batchImportStatus">{{ batchImportStatus }}</small>
           </div>
@@ -174,8 +195,8 @@
   </div>
   <div class="metube-section-header">Downloading</div>
   <div class="px-2 py-3 border-bottom">
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #queueDelSelected (click)="delSelectedDownloads('queue')"><fa-icon [icon]="faTrashAlt"></fa-icon>&nbsp; Cancel selected</button>
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #queueDownloadSelected (click)="startSelectedDownloads('queue')"><fa-icon [icon]="faDownload"></fa-icon>&nbsp; Download selected</button>
+    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #queueDelSelected (click)="delSelectedDownloads('queue')"><fa-icon [icon]="faTrashAlt"></fa-icon>&nbsp;</button>
+    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #queueDownloadSelected (click)="startSelectedDownloads('queue')"><fa-icon [icon]="faDownload"></fa-icon>&nbsp;</button>
   </div>
   <div class="overflow-auto">
     <table class="table">
@@ -217,11 +238,9 @@
 
   <div class="metube-section-header">Completed</div>
   <div class="px-2 py-3 border-bottom">
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneDelSelected (click)="delSelectedDownloads('done')"><fa-icon [icon]="faTrashAlt"></fa-icon>&nbsp; Clear selected</button>
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneClearCompleted (click)="clearCompletedDownloads()"><fa-icon [icon]="faCheckCircle"></fa-icon>&nbsp; Clear completed</button>
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneClearFailed (click)="clearFailedDownloads()"><fa-icon [icon]="faTimesCircle"></fa-icon>&nbsp; Clear failed</button>
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneRetryFailed (click)="retryFailedDownloads()"><fa-icon [icon]="faRedoAlt"></fa-icon>&nbsp; Retry failed</button>
-    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneDownloadSelected (click)="downloadSelectedFiles()"><fa-icon [icon]="faDownload"></fa-icon>&nbsp; Download Selected</button>
+    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneDelSelected (click)="delSelectedDownloads('done')"><fa-icon [icon]="faTrashAlt"></fa-icon>&nbsp;</button>
+    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneRetryFailed (click)="retryFailedDownloads()"><fa-icon [icon]="faRedoAlt"></fa-icon>&nbsp;</button>
+    <button type="button" class="btn btn-link text-decoration-none px-0 me-4" disabled #doneDownloadSelected (click)="downloadSelectedFiles()"><fa-icon [icon]="faDownload"></fa-icon>&nbsp;</button>
   </div>
   <div class="overflow-auto">
     <table class="table">
@@ -268,6 +287,26 @@
     </table>
   </div>
   <div class="footer text-center px-2">
-    <small *ngIf="versionInfo">{{ versionInfo }}</small>
+    <small *ngIf="versionInfo"></small>
   </div>
 </main><!-- /.container -->
+
+<!-- Info Modal -->
+<div class="modal fade" tabindex="-1" role="dialog" [ngClass]="{'show': infoModalOpen}" [ngStyle]="{'display': infoModalOpen ? 'block' : 'none'}">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Supported Sites</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeInfoModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="supported-sites-content">
+          <div [innerHTML]="supportedSitesContent | safeHtml"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeInfoModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

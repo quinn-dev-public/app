@@ -1,0 +1,71 @@
+
+
+git clone https://github.com/alexta69/metube
+
+
+docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/alexta69/metube
+
+metube ios shortcut
+https://www.icloud.com/shortcuts/66627a9f334c467baabdb2769763a1a6
+
+
+Browser extensions
+Browser extensions allow right-clicking videos and sending them directly to MeTube. Please note that if you're on an HTTPS page, your MeTube instance must be behind an HTTPS reverse proxy (see below) for the extensions to work.
+
+Chrome: contributed by Rpsl. You can install it from Google Chrome Webstore or use developer mode and install from sources.
+
+Firefox: contributed by nanocortex. You can install it from Firefox Addons or get sources from here.
+
+
+Bookmarklet
+kushfest has created a Chrome bookmarklet for sending the currently open webpage to MeTube. Please note that if you're on an HTTPS page, your MeTube instance must be configured with HTTPS as true in the environment, or be behind an HTTPS reverse proxy (see below) for the bookmarklet to work.
+
+GitHub doesn't allow embedding JavaScript as a link, so the bookmarklet has to be created manually by copying the following code to a new bookmark you create on your bookmarks bar. Change the hostname in the URL below to point to your MeTube instance.
+
+javascript:!function(){xhr=new XMLHttpRequest();xhr.open("POST","https://metube.domain.com/add");xhr.withCredentials=true;xhr.send(JSON.stringify({"url":document.location.href,"quality":"best"}));xhr.onload=function(){if(xhr.status==200){alert("Sent to metube!")}else{alert("Send to metube failed. Check the javascript console for clues.")}}}();
+shoonya75 has contributed a Firefox version:
+
+javascript:(function(){xhr=new XMLHttpRequest();xhr.open("POST","https://metube.domain.com/add");xhr.send(JSON.stringify({"url":document.location.href,"quality":"best"}));xhr.onload=function(){if(xhr.status==200){alert("Sent to metube!")}else{alert("Send to metube failed. Check the javascript console for clues.")}}})();
+The above bookmarklets use alert() as a success/failure notification. The following will show a toast message instead:
+
+Chrome:
+
+javascript:!function(){function notify(msg) {var sc = document.scrollingElement.scrollTop; var text = document.createElement('span');text.innerHTML=msg;var ts = text.style;ts.all = 'revert';ts.color = '#000';ts.fontFamily = 'Verdana, sans-serif';ts.fontSize = '15px';ts.backgroundColor = 'white';ts.padding = '15px';ts.border = '1px solid gainsboro';ts.boxShadow = '3px 3px 10px';ts.zIndex = '100';document.body.appendChild(text);ts.position = 'absolute'; ts.top = 50 + sc + 'px'; ts.left = (window.innerWidth / 2)-(text.offsetWidth / 2) + 'px'; setTimeout(function () { text.style.visibility = "hidden"; }, 1500);}xhr=new XMLHttpRequest();xhr.open("POST","https://metube.domain.com/add");xhr.send(JSON.stringify({"url":document.location.href,"quality":"best"}));xhr.onload=function() { if(xhr.status==200){notify("Sent to metube!")}else {notify("Send to metube failed. Check the javascript console for clues.")}}}();
+Firefox:
+
+javascript:(function(){function notify(msg) {var sc = document.scrollingElement.scrollTop; var text = document.createElement('span');text.innerHTML=msg;var ts = text.style;ts.all = 'revert';ts.color = '#000';ts.fontFamily = 'Verdana, sans-serif';ts.fontSize = '15px';ts.backgroundColor = 'white';ts.padding = '15px';ts.border = '1px solid gainsboro';ts.boxShadow = '3px 3px 10px';ts.zIndex = '100';document.body.appendChild(text);ts.position = 'absolute'; ts.top = 50 + sc + 'px'; ts.left = (window.innerWidth / 2)-(text.offsetWidth / 2) + 'px'; setTimeout(function () { text.style.visibility = "hidden"; }, 1500);}xhr=new XMLHttpRequest();xhr.open("POST","https://metube.domain.com/add");xhr.send(JSON.stringify({"url":document.location.href,"quality":"best"}));xhr.onload=function() { if(xhr.status==200){notify("Sent to metube!")}else {notify("Send to metube failed. Check the javascript console for clues.")}}})();
+
+
+
+Run using docker-compose
+services:
+  metube:
+    image: ghcr.io/alexta69/metube
+    container_name: metube
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    volumes:
+      - /path/to/downloads:/downloads
+      - /path/to/cookies:/cookies
+    environment:
+      - 'OUTPUT_TEMPLATE=%(playlist_title&Playlist |)S%(playlist_title|)S%(playlist_uploader& by |)S%(playlist_uploader|)S%(playlist_autonumber& - |)S%(playlist_autonumber|)S%(playlist_count& of |)S%(playlist_count|)S%(playlist_autonumber& - |)S%(uploader,creator|UNKNOWN_AUTHOR)S - %(title|UNKNOWN_TITLE)S - %(release_date>%Y-%m-%d,upload_date>%Y-%m-%d|UNKNOWN_DATE)S.%(ext)s'
+  environment:
+    - 'YTDL_OPTIONS={"format": "best", "exec": "ffmpeg -i %(filepath)q -c:v libx264 -c:a aac %(filepath)q.h264.mp4"}'
+    volumes:
+      - /path/to/downloads:/downloads
+      - /path/to/ssl/crt:/ssl/crt.pem
+      - /path/to/ssl/key:/ssl/key.pem
+    environment:
+          - YTDL_OPTIONS={"cookiefile":"/cookies/cookies.txt"}
+      - HTTPS=true
+      - CERTFILE=/ssl/crt.pem
+      - KEYFILE=/ssl/key.pem
+      - AUDIO_DOWNLOAD_DIR=/path/to/audio-downloads
+      - DELETE_FILE_ON_TRASHCAN=true
+      - DOWNLOAD_MODE=limited
+      - MAX_CONCURRENT_DOWNLOADS=10
+      ROBOTS_TXT: A path to a robots.txt file mounted in the container
+
+
+

@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { faTrashAlt, faCheckCircle, faTimesCircle, IconDefinition } from '@fortawesome/free-regular-svg-icons';
-import { faRedoAlt, faSun, faMoon, faCircleHalfStroke, faCheck, faExternalLinkAlt, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faRedoAlt, faSun, faMoon, faCircleHalfStroke, faCheck, faExternalLinkAlt, faDownload, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { CookieService } from 'ngx-cookie-service';
 import { map, Observable, of } from 'rxjs';
 
@@ -38,6 +38,9 @@ export class AppComponent implements AfterViewInit {
   importInProgress = false;
   cancelImportFlag = false;
   versionInfo: string | null = null;
+  infoModalOpen = false;
+  supportedSitesContent: string;
+  showInstallPrompt = false;
 
   @ViewChild('queueMasterCheckbox') queueMasterCheckbox: MasterCheckboxComponent;
   @ViewChild('queueDelSelected') queueDelSelected: ElementRef;
@@ -59,18 +62,26 @@ export class AppComponent implements AfterViewInit {
   faCircleHalfStroke = faCircleHalfStroke;
   faDownload = faDownload;
   faExternalLinkAlt = faExternalLinkAlt;
+  faInfoCircle = faInfoCircle;
 
   constructor(public downloads: DownloadsService, private cookieService: CookieService, private http: HttpClient) {
-    this.format = cookieService.get('metube_format') || 'any';
+    this.format = cookieService.get('metube_format') || 'mp3';
     // Needs to be set or qualities won't automatically be set
     this.setQualities()
     this.quality = cookieService.get('metube_quality') || 'best';
     this.autoStart = cookieService.get('metube_auto_start') !== 'false';
 
     this.activeTheme = this.getPreferredTheme(cookieService);
+    this.loadSupportedSitesContent();
   }
 
   ngOnInit() {
+    // Show install prompt for 5 seconds when the app loads
+    this.showInstallPrompt = true;
+    setTimeout(() => {
+      this.dismissInstallPrompt();
+    }, 5000);
+
     this.getConfiguration();
     this.customDirs$ = this.getMatchingCustomDir();
     this.setTheme(this.activeTheme);
@@ -181,6 +192,11 @@ export class AppComponent implements AfterViewInit {
     this.cookieService.set('metube_format', this.format, { expires: 3650 });
     // Updates to use qualities available
     this.setQualities()
+    // Set best_ios as default for MP4
+    if (this.format === 'mp4') {
+      this.quality = 'best_ios';
+      this.cookieService.set('metube_quality', this.quality, { expires: 3650 });
+    }
     // Re-trigger custom directory change
     this.downloads.customDirsChanged.next(this.downloads.customDirs);
   }
@@ -203,7 +219,10 @@ export class AppComponent implements AfterViewInit {
     // qualities for specific format
     this.qualities = this.formats.find(el => el.id == this.format).qualities
     const exists = this.qualities.find(el => el.id === this.quality)
-    this.quality = exists ? this.quality : 'best'
+    if (!exists) {
+      // Set default quality based on format
+      this.quality = this.format === 'mp4' ? 'best_ios' : 'best'
+    }
   }
 
   addDownload(url?: string, quality?: string, format?: string, folder?: string, customNamePrefix?: string, playlistStrictMode?: boolean, playlistItemLimit?: number, autoStart?: boolean) {
@@ -450,5 +469,211 @@ export class AppComponent implements AfterViewInit {
           this.versionInfo = '';
         }
       });
+  }
+
+  async tryPasteFromClipboard() {
+    // Only proceed if the field is empty
+    if (this.addUrl) {
+      return;
+    }
+
+    // Check if the Clipboard API is available
+    if (!navigator.clipboard) {
+      console.debug('Clipboard API not available');
+      return;
+    }
+
+    try {
+      const text = await navigator.clipboard.readText();
+      
+      // Check if we got text and it looks like a URL
+      if (text && /^https?:\/\//i.test(text)) {
+        this.addUrl = text;
+      }
+    } catch (err) {
+      // This can happen if permission is denied or HTTPS is required
+      console.debug('Could not access clipboard:', err);
+    }
+  }
+
+  loadSupportedSitesContent() {
+    const content = `
+      <div class="supported-sites-content">
+        <p>Supports 1,845 websites including Youtube, Twitter, Instagram, Facebook, Tiktok, etc.</p>
+        
+        <h3>Major Platforms</h3>
+        <p><strong>YouTube:</strong></p>
+        <ul>
+          <li>youtube:all</li>
+          <li>youtube:playlist</li>
+          <li>youtube:search</li>
+          <li>youtube:user</li>
+          <li>youtube:channel</li>
+          <li>youtube:shorts</li>
+          <li>youtube:tab</li>
+          <li>youtube:live</li>
+          <li>YoutubeYtBe</li>
+        </ul>
+
+        <p><strong>Twitter:</strong></p>
+        <ul>
+          <li>twitter:all</li>
+          <li>twitter:broadcast</li>
+          <li>twitter:spaces</li>
+          <li>twitter:card</li>
+        </ul>
+
+        <p><strong>Instagram:</strong></p>
+        <ul>
+          <li>instagram:all</li>
+          <li>instagram:story</li>
+          <li>instagram:user</li>
+          <li>instagram:tag</li>
+        </ul>
+
+        <p><strong>Facebook:</strong></p>
+        <ul>
+          <li>facebook:all</li>
+          <li>facebook:reel</li>
+          <li>FacebookPluginsVideo</li>
+        </ul>
+
+        <p><strong>TikTok:</strong></p>
+        <ul>
+          <li>tiktok:all</li>
+          <li>tiktok:user</li>
+          <li>tiktok:live</li>
+          <li>tiktok:collection</li>
+        </ul>
+
+        <p><strong>Twitch:</strong></p>
+        <ul>
+          <li>twitch:all</li>
+          <li>twitch:clips</li>
+          <li>twitch:stream</li>
+          <li>twitch:vod</li>
+          <li>TwitchCollection</li>
+          <li>TwitchVideos</li>
+        </ul>
+
+        <p><strong>LinkedIn:</strong> linkedin:learning</p>
+        <p><strong>Reddit</strong></p>
+
+        <h3>Video Platforms</h3>
+        <p><strong>Vimeo:</strong></p>
+        <ul>
+          <li>vimeo:all</li>
+          <li>vimeo:album</li>
+          <li>vimeo:channel</li>
+          <li>vimeo:user</li>
+        </ul>
+
+        <p><strong>Dailymotion:</strong></p>
+        <ul>
+          <li>dailymotion:all</li>
+          <li>dailymotion:playlist</li>
+          <li>dailymotion:user</li>
+        </ul>
+
+        <h3>Music & Audio</h3>
+        <p><strong>SoundCloud:</strong></p>
+        <ul>
+          <li>soundcloud:all</li>
+          <li>soundcloud:playlist</li>
+          <li>soundcloud:user</li>
+          <li>soundcloud:set</li>
+        </ul>
+
+        <p><strong>Spotify:</strong> Spotify episodes and shows</p>
+        <ul>
+          <li>spotify:show</li>
+          <li>spotify:playlist</li>
+          <li>spotify:album</li>
+          <li>spotify:artist</li>
+          <li>spotify:track</li>
+          <li>spotify:user</li>
+          
+        </ul>
+
+        <p><strong>Bandcamp:</strong></p>
+        <ul>
+          <li>bandcamp:all</li>
+          <li>Bandcamp:album</li>
+          <li>Bandcamp:user</li>
+        </ul>
+
+        <h3>News & Media</h3>
+        <ul>
+          <li>BBC</li>
+          <li>CNN</li>
+          <li>Reuters</li>
+          <li>NYTimes</li>
+          <li>Washington Post</li>
+          <li>The Guardian</li>
+          <li>Bloomberg</li>
+          <li>CNBC</li>
+          <li>NBC News</li>
+          <li>CBS News</li>
+          <li>ABC News</li>
+          <li>Fox News</li>
+        </ul>
+
+        <h3>Learning Platforms</h3>
+        <ul>
+          <li>Coursera</li>
+          <li>Udemy</li>
+          <li>edX</li>
+          <li>Khan Academy</li>
+          <li>MIT OpenCourseWare</li>
+          <li>Stanford Online</li>
+        </ul>
+
+        <h3>Video Conferencing</h3>
+        <ul>
+          <li>Zoom</li>
+          <li>WebEx</li>
+          <li>Google Meet</li>
+        </ul>
+
+        <h3>Cloud Storage</h3>
+        <ul>
+          <li>Google Drive</li>
+          <li>OneDrive</li>
+          <li>Dropbox</li>
+        </ul>
+
+        <h3>Other Platforms</h3>
+        <ul>
+          <li><strong>Archive.org:</strong> Internet Archive video and audio</li>
+          <li>NPR</li>
+          <li>PBS</li>
+          <li><strong>TED:</strong></li>
+          <ul>
+            <li>TedTalk</li>
+            <li>TedPlaylist</li>
+            <li>TedSeries</li>
+          </ul>
+          <li>Vevo</li>
+          <li><strong>IMDb:</strong> Internet Movie Database trailers</li>
+          <li>Discord</li>
+          <li>Telegram</li>
+        </ul>
+
+        <p>Full list of sites supported <a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md" target="_blank">here</a>.</p>
+      </div>
+    `;
+    this.supportedSitesContent = content;
+  }
+
+  openInfoModal() {
+    this.infoModalOpen = true;
+  }
+
+  closeInfoModal() {
+    this.infoModalOpen = false;
+  }
+
+  dismissInstallPrompt() {
+    this.showInstallPrompt = false;
   }
 }

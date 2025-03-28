@@ -7,7 +7,7 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { CookieService } from 'ngx-cookie-service';
 
 import { AppComponent } from './app.component';
-import { EtaPipe, SpeedPipe, EncodeURIComponent, FileSizePipe } from './downloads.pipe';
+import { EtaPipe, SpeedPipe, EncodeURIComponent, FileSizePipe, SafeHtmlPipe } from './downloads.pipe';
 import { MasterCheckboxComponent, SlaveCheckboxComponent } from './master-checkbox.component';
 import { MeTubeSocket } from './metube-socket';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -20,6 +20,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     SpeedPipe,
     FileSizePipe,
     EncodeURIComponent,
+    SafeHtmlPipe,
     MasterCheckboxComponent,
     SlaveCheckboxComponent
   ],
